@@ -1,5 +1,6 @@
 package com.isis.archivage.controllers;
 
+import java.security.Principal;
 import java.util.List;
 
 import org.springframework.core.io.Resource;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import java.security.Principal; // Import à ajouter
 
 import com.isis.archivage.entities.Document;
 import com.isis.archivage.repositories.DocumentRepository;
@@ -63,9 +65,14 @@ public class DocumentController {
      * Accessible via : GET http://localhost:8080/api/documents
      */
     @GetMapping
-    public ResponseEntity<List<Document>> getAllDocuments() {
-        List<Document> documents = documentService.obtenirTousLesDocuments();
-        return ResponseEntity.ok(documents); // Retourne un code 200 OK avec la liste en JSON
+    public ResponseEntity<?> getAllDocuments(Principal principal) {
+        try {
+            // principal.getName() contient l'email que notre JwtFilter a extrait du jeton !
+            List<Document> documents = documentService.obtenirTousLesDocuments(principal.getName());
+            return ResponseEntity.ok(documents);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        }
     }
 
     /**

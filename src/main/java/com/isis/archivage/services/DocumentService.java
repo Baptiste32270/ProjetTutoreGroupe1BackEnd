@@ -90,12 +90,30 @@ public class DocumentService {
         return documentSauvegarde;
     }
 
-    /**
-     * Récupère absolument tous les documents de la base (pour l'affichage par
-     * défaut)
-     */
-    public List<Document> obtenirTousLesDocuments() {
-        return documentRepository.findAll();
+    public List<Document> obtenirTousLesDocuments(String emailUtilisateur) throws Exception {
+
+        // 1. On retrouve l'utilisateur en base avec ses rôles
+        Utilisateur utilisateur = utilisateurRepository.findByEmail(emailUtilisateur)
+                .orElseThrow(() -> new Exception("Utilisateur introuvable"));
+
+        // 2. On vérifie s'il est Administrateur
+        boolean estAdmin = utilisateur.getRoles().stream()
+                .anyMatch(role -> role.getNomRole().equals("ADMIN"));
+
+        // 3. S'il est ADMIN, il voit toute la base de données
+        if (estAdmin) {
+            return documentRepository.findAll();
+        }
+
+        // 4. S'il n'est pas ADMIN (ex: ÉTUDIANT), on filtre la liste
+        // Par exemple, il ne peut voir que les documents dont le type est "PUBLIC" ou
+        // "COURS"
+        else {
+            return documentRepository.findAll().stream()
+                    .filter(doc -> doc.getType() != null &&
+                            (doc.getType().getLibelle().equals("COURS") || doc.getType().getLibelle().equals("PUBLIC")))
+                    .toList();
+        }
     }
 
     /**

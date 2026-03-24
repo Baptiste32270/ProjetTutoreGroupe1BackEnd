@@ -1,0 +1,59 @@
+package com.isis.archivage.controllers;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.isis.archivage.dto.LoginRequest;
+import com.isis.archivage.entities.Utilisateur;
+import com.isis.archivage.repositories.UtilisateurRepository;
+import com.isis.archivage.security.JwtService;
+
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/api/auth")
+@CrossOrigin(origins = "*")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final UtilisateurRepository utilisateurRepository;
+    private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
+
+    @PostMapping("/login")
+    public ResponseEntity<?> connexion(@RequestBody LoginRequest requete) {
+
+        // 1. On cherche l'utilisateur dans la base H2 via son email
+        Optional<Utilisateur> utilisateurOpt = utilisateurRepository.findByEmail(requete.getEmail());
+
+        if (utilisateurOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Email incorrect");
+        }
+
+        Utilisateur utilisateur = utilisateurOpt.get();
+
+        // 2. On vérifie le mot de passe crypté !
+        if (!passwordEncoder.matches(requete.getMotDePasse(), utilisateur.getMotDePasse())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Mot de passe incorrect");
+        }
+
+        // 3. Si tout est bon, on génère le Token JWT
+        String token = jwtService.genererToken(utilisateur);
+
+        // 4. On renvoie le token au format JSON (pour que Vue.js puisse le sauvegarder)
+        Map<String, String> reponse = new HashMap<>();
+        reponse.put("token", token);
+
+        return ResponseEntity.ok(reponse);
+    }
+}
