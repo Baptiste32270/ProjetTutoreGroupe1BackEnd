@@ -24,17 +24,10 @@ public class QrCodeService {
      */
     public byte[] genererQrCodeImage(String texte, int largeur, int hauteur) throws Exception {
 
-        // 1. Initialise le moteur d'écriture ZXing
         QRCodeWriter qrCodeWriter = new QRCodeWriter();
-
-        // 2. Encode le texte en une matrice 2D (le motif noir et blanc du QR Code)
         BitMatrix bitMatrix = qrCodeWriter.encode(texte, BarcodeFormat.QR_CODE, largeur, hauteur);
-
-        // 3. Transforme la matrice en véritable image PNG en mémoire
         ByteArrayOutputStream pngOutputStream = new ByteArrayOutputStream();
         MatrixToImageWriter.writeToStream(bitMatrix, "PNG", pngOutputStream);
-
-        // 4. Retourne les octets de l'image
         return pngOutputStream.toByteArray();
     }
 }

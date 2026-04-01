@@ -34,26 +34,22 @@ public class DocumentService {
     // Dossier où les vrais fichiers PDF seront sauvegardés sur ton PC
     private final String UPLOAD_DIRECTORY = "uploads/documents/";
 
-    /**
-     * Méthode principale pour gérer le dépôt d'un document
-     */
+    // Méthode principale pour gérer le dépôt d'un document
+
     @Transactional // Si une erreur survient (ex: disque plein), annule aussi l'écriture en BDD
     public Document uploaderDocument(MultipartFile fichier, String titre, String description, Long idAuteur)
             throws Exception {
 
         String nomFichier = fichier.getOriginalFilename();
 
-        // 1. VÉRIFICATION DES RÈGLES MÉTIER (EX-F-06 : Doublons)
         if (documentRepository.existsByNomFichier(nomFichier)) {
             throw new Exception("Un fichier nommé " + nomFichier + " existe déjà dans le système !");
         }
 
-        // Vérification de la taille (EX-F-02 : max 20 Mo)
         if (fichier.getSize() > 20 * 1024 * 1024) {
             throw new Exception("Le fichier est trop volumineux (Maximum 20 Mo).");
         }
 
-        // 2. SAUVEGARDE PHYSIQUE SUR LE DISQUE
         Path cheminDossier = Paths.get(UPLOAD_DIRECTORY);
         if (!Files.exists(cheminDossier)) {
             Files.createDirectories(cheminDossier); // Crée le dossier s'il n'existe pas
@@ -61,23 +57,18 @@ public class DocumentService {
         Path cheminFichier = cheminDossier.resolve(nomFichier);
         Files.copy(fichier.getInputStream(), cheminFichier); // Écrit le fichier
 
-        // 3. RÉCUPÉRATION DE L'AUTEUR
         Utilisateur auteur = utilisateurRepository.findById(idAuteur)
                 .orElseThrow(() -> new Exception("Utilisateur introuvable"));
 
-        // 4. SAUVEGARDE EN BASE DE DONNÉES (Les métadonnées)
         Document doc = new Document();
         doc.setNomFichier(nomFichier);
         doc.setTitre(titre);
         doc.setDescription(description);
         doc.setDateDepot(LocalDate.now());
         doc.setAuteur(auteur);
-        // (Ici tu pourrais aussi lier la BoiteArchive et le TypeDocument de la même
-        // manière)
 
         Document documentSauvegarde = documentRepository.save(doc);
 
-        // 5. TRAÇABILITÉ (EX-F-05)
         HistoriqueAction log = new HistoriqueAction();
         log.setTypeAction("DEPOT_DOCUMENT");
         log.setDateAction(LocalDateTime.now());
@@ -92,22 +83,16 @@ public class DocumentService {
 
     public List<Document> obtenirTousLesDocuments(String emailUtilisateur) throws Exception {
 
-        // 1. On retrouve l'utilisateur en base avec ses rôles
         Utilisateur utilisateur = utilisateurRepository.findByEmail(emailUtilisateur)
                 .orElseThrow(() -> new Exception("Utilisateur introuvable"));
 
-        // 2. On vérifie s'il est Administrateur
         boolean estAdmin = utilisateur.getRoles().stream()
                 .anyMatch(role -> role.getNomRole().equals("ADMIN"));
 
-        // 3. S'il est ADMIN, il voit toute la base de données
         if (estAdmin) {
             return documentRepository.findAll();
         }
 
-        // 4. S'il n'est pas ADMIN (ex: ÉTUDIANT), on filtre la liste
-        // Par exemple, il ne peut voir que les documents dont le type est "PUBLIC" ou
-        // "COURS"
         else {
             return documentRepository.findAll().stream()
                     .filter(doc -> doc.getType() != null &&
@@ -116,36 +101,27 @@ public class DocumentService {
         }
     }
 
-    /**
-     * Recherche un document dont le titre contient un mot clé (insensible à la
-     * casse)
-     */
+    // Recherche un document dont le titre contient un mot clé (insensible à
+    // lacasse)
     public List<Document> rechercherParTitre(String motCle) {
         return documentRepository.findByTitreContainingIgnoreCase(motCle);
     }
 
-    /**
-     * Recherche les documents déposés par un auteur précis (via Nom et Prénom)
-     */
+    // Recherche les documents déposés par un auteur précis (via Nom et Prénom)
     public List<Document> rechercherParAuteur(String nom, String prenom) {
         return documentRepository.findByAuteur_NomAndAuteur_Prenom(nom, prenom);
     }
 
-    /**
-     * Permet de télécharger un fichier physique et de tracer l'action
-     */
+    // Permet de télécharger un fichier physique et de tracer l'action
     @Transactional
     public Resource telechargerDocument(Long idDocument, Long idUtilisateur) throws Exception {
 
-        // 1. On cherche les métadonnées du document en Base de données
         Document doc = documentRepository.findById(idDocument)
                 .orElseThrow(() -> new Exception("Document introuvable avec l'ID : " + idDocument));
 
-        // 2. On cherche l'utilisateur qui fait l'action (pour l'audit)
         Utilisateur utilisateur = utilisateurRepository.findById(idUtilisateur)
                 .orElseThrow(() -> new Exception("Utilisateur introuvable pour la traçabilité"));
 
-        // 3. On va chercher le vrai fichier sur le disque dur
         Path cheminFichier = Paths.get(UPLOAD_DIRECTORY).resolve(doc.getNomFichier()).normalize();
         Resource resource = new UrlResource(cheminFichier.toUri());
 
@@ -162,7 +138,6 @@ public class DocumentService {
 
         historiqueActionRepository.save(log); // Sauvegarde du log en base
 
-        // 5. On retourne le fichier prêt à être envoyé par le réseau
         return resource;
     }
 }

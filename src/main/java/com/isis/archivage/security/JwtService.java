@@ -1,13 +1,15 @@
 package com.isis.archivage.security;
 
+import java.security.Key;
+import java.util.Date;
+
+import org.springframework.stereotype.Service;
+
 import com.isis.archivage.entities.Utilisateur;
+
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.stereotype.Service;
-
-import java.security.Key;
-import java.util.Date;
 
 @Service
 public class JwtService {
@@ -19,9 +21,7 @@ public class JwtService {
     // Le token sera valide pendant 24 heures (en millisecondes)
     private final long DUREE_VALIDITE = 1000 * 60 * 60 * 24;
 
-    /**
-     * Méthode pour générer un token JWT pour un utilisateur précis
-     */
+    // Méthode pour générer un token JWT pour un utilisateur précis
     public String genererToken(Utilisateur utilisateur) {
         return Jwts.builder()
                 .setSubject(utilisateur.getEmail()) // Le sujet principal du token est l'email
@@ -33,9 +33,7 @@ public class JwtService {
                 .compact();
     }
 
-    /**
-     * Lit le token et récupère l'email qu'il contient
-     */
+    // Lit le token et récupère l'email qu'il contient
     public String extraireEmail(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(cleSecrete)

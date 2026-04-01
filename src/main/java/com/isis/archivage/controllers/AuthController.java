@@ -33,7 +33,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> connexion(@RequestBody LoginRequest requete) {
 
-        // 1. On cherche l'utilisateur dans la base H2 via son email
+        // On cherche l'utilisateur dans la base via son email
         Optional<Utilisateur> utilisateurOpt = utilisateurRepository.findByEmail(requete.getEmail());
 
         if (utilisateurOpt.isEmpty()) {
@@ -42,15 +42,15 @@ public class AuthController {
 
         Utilisateur utilisateur = utilisateurOpt.get();
 
-        // 2. On vérifie le mot de passe crypté !
+        // On vérifie le mot de passe crypté !
         if (!passwordEncoder.matches(requete.getMotDePasse(), utilisateur.getMotDePasse())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Mot de passe incorrect");
         }
 
-        // 3. Si tout est bon, on génère le Token JWT
+        // Si tout est bon on génère le Token
         String token = jwtService.genererToken(utilisateur);
 
-        // 4. On renvoie le token au format JSON (pour que Vue.js puisse le sauvegarder)
+        // On renvoie le token au format JSON
         Map<String, String> reponse = new HashMap<>();
         reponse.put("token", token);
 
