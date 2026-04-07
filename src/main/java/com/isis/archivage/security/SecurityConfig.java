@@ -31,7 +31,6 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/h2-console/**",
                                 "/api/documents/*/qrcode",
                                 "/api/auth/login",
                                 "/api/utilisateurs/creer",
