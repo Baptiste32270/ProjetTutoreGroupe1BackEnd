@@ -1,5 +1,6 @@
 package com.isis.archivage.entities;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,4 +18,7 @@ public class DureeConservation {
     private Long idDuree;
 
     private String sortFinal;
+
+    @Column(name = "duree_annees")
+    private Integer dureeAnnees;
 }
