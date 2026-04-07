@@ -20,7 +20,6 @@ public class UtilisateurController {
     public ResponseEntity<?> creerUtilisateur(@RequestBody CreationUtilisateurRequest request) {
         try {
             Utilisateur utilisateurCree = utilisateurService.creerUtilisateur(request);
-            // On retourne un code 201 (Created)
             return ResponseEntity.status(HttpStatus.CREATED).body(utilisateurCree);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());

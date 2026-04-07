@@ -10,7 +10,5 @@ import com.isis.archivage.entities.Utilisateur;
 @Repository
 public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> {
 
-    // Spring Boot comprend le nom de la méthode et génère le SQL automatiquement !
-    // C'est l'équivalent de : SELECT * FROM utilisateur WHERE email = ?
     Optional<Utilisateur> findByEmail(String email);
 }

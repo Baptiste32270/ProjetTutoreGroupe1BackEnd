@@ -1,10 +1,15 @@
 package com.isis.archivage.services;
 
+import java.util.Map;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.isis.archivage.dto.CreationUtilisateurRequest;
+import com.isis.archivage.entities.DroitAcces;
 import com.isis.archivage.entities.Utilisateur;
+import com.isis.archivage.enums.CategorieArchive;
+import com.isis.archivage.enums.NiveauAcces;
 import com.isis.archivage.repositories.UtilisateurRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -14,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class UtilisateurService {
 
     private final UtilisateurRepository utilisateurRepository;
-    private final PasswordEncoder passwordEncoder; // Notre outil pour crypter !
+    private final PasswordEncoder passwordEncoder;
 
     public Utilisateur creerUtilisateur(CreationUtilisateurRequest request) throws Exception {
 
@@ -26,11 +31,18 @@ public class UtilisateurService {
         nouvelUtilisateur.setNom(request.getNom());
         nouvelUtilisateur.setPrenom(request.getPrenom());
         nouvelUtilisateur.setEmail(request.getEmail());
-
-        String motDePasseCrypte = passwordEncoder.encode(request.getMotDePasse());
-        nouvelUtilisateur.setMotDePasse(motDePasseCrypte);
-
+        nouvelUtilisateur.setMotDePasse(passwordEncoder.encode(request.getMotDePasse()));
         nouvelUtilisateur.setPremiereConnexion(true);
+
+        if (request.getDroits() != null) {
+            for (Map.Entry<CategorieArchive, NiveauAcces> entry : request.getDroits().entrySet()) {
+                DroitAcces droit = new DroitAcces();
+                droit.setCategorie(entry.getKey());
+                droit.setNiveauAcces(entry.getValue());
+                droit.setUtilisateur(nouvelUtilisateur);
+                nouvelUtilisateur.getDroitsAcces().add(droit);
+            }
+        }
 
         return utilisateurRepository.save(nouvelUtilisateur);
     }

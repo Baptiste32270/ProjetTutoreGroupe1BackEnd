@@ -42,15 +42,13 @@ public class AuthController {
 
         Utilisateur utilisateur = utilisateurOpt.get();
 
-        // On vérifie le mot de passe crypté !
+        // On vérifie le mot de passe
         if (!passwordEncoder.matches(requete.getMotDePasse(), utilisateur.getMotDePasse())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Mot de passe incorrect");
         }
 
-        // Si tout est bon on génère le Token
         String token = jwtService.genererToken(utilisateur);
 
-        // On renvoie le token au format JSON
         Map<String, String> reponse = new HashMap<>();
         reponse.put("token", token);
 

@@ -15,5 +15,5 @@ public class TypeDocument {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idType;
 
-    private String libelle; // Corrigé de "libele"
+    private String libelle;
 }

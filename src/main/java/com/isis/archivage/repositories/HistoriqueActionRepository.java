@@ -10,9 +10,7 @@ import com.isis.archivage.entities.HistoriqueAction;
 @Repository
 public interface HistoriqueActionRepository extends JpaRepository<HistoriqueAction, Long> {
 
-    // Retrouver tout l'historique d'un document spécifique
     List<HistoriqueAction> findByDocument_IdDocument(Long idDocument);
 
-    // Retrouver toutes les actions faites par un utilisateur spécifique
     List<HistoriqueAction> findByUtilisateur_IdUtilisateur(Long idUtilisateur);
 }

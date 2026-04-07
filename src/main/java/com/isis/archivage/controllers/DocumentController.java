@@ -18,41 +18,44 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.isis.archivage.entities.Document;
+import com.isis.archivage.enums.CategorieArchive;
 import com.isis.archivage.repositories.DocumentRepository;
 import com.isis.archivage.services.DocumentService;
+import com.isis.archivage.services.PdfService;
 import com.isis.archivage.services.QrCodeService;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 
-@RestController // cette classe répond aux requêtes web (API REST)
-@RequestMapping("/api/documents") // L'URL de base pour ce contrôleur
-@CrossOrigin(origins = "*") // Autorise le front-end à appeler cette API
+@RestController
+@RequestMapping("/api/documents")
+@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "Bearer Authentication")
 public class DocumentController {
 
     private final DocumentService documentService;
-    private final QrCodeService qrCodeService;
     private final DocumentRepository documentRepository;
+    private final QrCodeService qrCodeService;
+    private final PdfService pdfService;
 
-    // Point d'entrée pour l'upload d'un document.
-    @PostMapping("/upload")
-    public ResponseEntity<?> uploadDocument(
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploaderDocument(
             @RequestParam("fichier") MultipartFile fichier,
             @RequestParam("titre") String titre,
             @RequestParam("description") String description,
-            @RequestParam("idAuteur") Long idAuteur) {
+            @RequestParam("categorie") CategorieArchive categorie,
+            Principal principal) {
 
         try {
-            Document documentSauvegarde = documentService.uploaderDocument(fichier, titre, description, idAuteur);
-
+            Document documentSauvegarde = documentService.uploaderDocument(fichier, titre, description, categorie,
+                    principal.getName());
             return ResponseEntity.status(HttpStatus.CREATED).body(documentSauvegarde);
-
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
-    // Point d'entrée pour récupérer tous les documents.
     @GetMapping
     public ResponseEntity<?> getAllDocuments(Principal principal) {
         try {
@@ -63,37 +66,38 @@ public class DocumentController {
         }
     }
 
-    // Point d'entrée pour la recherche par titre.
     @GetMapping("/recherche/titre")
-    public ResponseEntity<List<Document>> rechercherParTitre(@RequestParam("motCle") String motCle) {
-        List<Document> resultats = documentService.rechercherParTitre(motCle);
-        return ResponseEntity.ok(resultats);
+    public ResponseEntity<?> rechercherParTitre(@RequestParam("motCle") String motCle, Principal principal) {
+        try {
+            List<Document> resultats = documentService.rechercherParTitre(motCle, principal.getName());
+            return ResponseEntity.ok(resultats);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        }
     }
 
-    // Point d'entrée pour la recherche par auteur.
     @GetMapping("/recherche/auteur")
-    public ResponseEntity<List<Document>> rechercherParAuteur(
+    public ResponseEntity<?> rechercherParAuteur(
             @RequestParam("nom") String nom,
-            @RequestParam("prenom") String prenom) {
-
-        List<Document> resultats = documentService.rechercherParAuteur(nom, prenom);
-        return ResponseEntity.ok(resultats);
+            @RequestParam("prenom") String prenom,
+            Principal principal) {
+        try {
+            List<Document> resultats = documentService.rechercherParAuteur(nom, prenom, principal.getName());
+            return ResponseEntity.ok(resultats);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        }
     }
 
-    // Point d'entrée pour télécharger un document physique.
     @GetMapping("/{id}/telecharger")
     public ResponseEntity<?> telechargerDocument(
             @PathVariable("id") Long idDocument,
-            @RequestParam("idUtilisateur") Long idUtilisateur) {
+            Principal principal) {
 
         try {
-            // On récupère le fichier
-            Resource resource = documentService.telechargerDocument(idDocument, idUtilisateur);
-
+            Resource resource = documentService.telechargerDocument(idDocument, principal.getName());
             return ResponseEntity.ok()
-                    // Dit au navigateur que c'est un PDF
                     .contentType(MediaType.APPLICATION_PDF)
-                    // Propose de télécharger le fichier avec son nom d'origine
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
                     .body(resource);
 
@@ -102,19 +106,33 @@ public class DocumentController {
         }
     }
 
-    // Génère et affiche le QR Code d'un document spécifique.
     @GetMapping(value = "/{id}/qrcode", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> obtenirQrCodeDocument(@PathVariable("id") Long idDocument) {
         try {
             Document doc = documentRepository.findById(idDocument)
                     .orElseThrow(() -> new Exception("Document introuvable"));
 
-            // Demander à gemini
             String urlFrontend = "http://localhost:5173/documents/details/" + doc.getIdDocument();
-
             byte[] image = qrCodeService.genererQrCodeImage(urlFrontend, 250, 250);
 
             return ResponseEntity.ok().body(image);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping(value = "/{id}/etiquette", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> telechargerEtiquettePdf(@PathVariable("id") Long idDocument) {
+        try {
+            Document doc = documentRepository.findById(idDocument)
+                    .orElseThrow(() -> new Exception("Document introuvable"));
+
+            byte[] pdfBytes = pdfService.genererEtiquettePdf(doc);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"etiquette_archive_" + idDocument + ".pdf\"")
+                    .body(pdfBytes);
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

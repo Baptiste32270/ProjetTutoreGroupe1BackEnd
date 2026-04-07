@@ -19,7 +19,6 @@ public class BoiteArchive {
 
     private String nomBoite;
 
-    // Relation "situe a"
     @ManyToOne
     @JoinColumn(name = "id_emplacement")
     private Emplacement emplacement;

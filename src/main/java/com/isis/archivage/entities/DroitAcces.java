@@ -1,8 +1,8 @@
 package com.isis.archivage.entities;
 
-import java.time.LocalDateTime;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.isis.archivage.enums.CategorieArchive;
+import com.isis.archivage.enums.NiveauAcces;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -16,22 +16,20 @@ import lombok.Data;
 
 @Entity
 @Data
-public class Document {
+public class DroitAcces {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idDocument;
-
-    private String nomFichier;
-    private String titre;
-    private String description;
-    private LocalDateTime dateDepot;
-    private boolean estNumerise;
+    private Long idDroit;
 
     @Enumerated(EnumType.STRING)
     private CategorieArchive categorie;
 
+    @Enumerated(EnumType.STRING)
+    private NiveauAcces niveauAcces;
+
     @ManyToOne
-    @JoinColumn(name = "id_utilisateur_auteur")
-    private Utilisateur auteur;
+    @JoinColumn(name = "id_utilisateur")
+    @JsonIgnore
+    private Utilisateur utilisateur;
 }

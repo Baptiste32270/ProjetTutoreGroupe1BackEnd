@@ -17,7 +17,5 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     // mot)
     List<Document> findByTitreContainingIgnoreCase(String titre);
 
-    // Autre exemple de recherche multicritère (par année et par auteur)
-    // On suppose ici que "dateDepot" servira pour extraire l'année en base
     List<Document> findByAuteur_NomAndAuteur_Prenom(String nom, String prenom);
 }
