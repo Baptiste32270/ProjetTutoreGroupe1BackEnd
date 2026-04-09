@@ -1,25 +1,28 @@
 package com.isis.archivage.services;
 
-import com.isis.archivage.entities.Document;
-import com.isis.archivage.entities.HistoriqueAction;
-import com.isis.archivage.entities.Utilisateur;
-import com.isis.archivage.enums.CategorieArchive;
-import com.isis.archivage.enums.NiveauAcces;
-import com.isis.archivage.repositories.DocumentRepository;
-import com.isis.archivage.repositories.HistoriqueActionRepository;
-import com.isis.archivage.repositories.UtilisateurRepository;
-import lombok.RequiredArgsConstructor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.List;
+import com.isis.archivage.entities.Document;
+import com.isis.archivage.entities.HistoriqueAction;
+import com.isis.archivage.entities.Utilisateur;
+import com.isis.archivage.enums.CategorieArchive;
+import com.isis.archivage.enums.NiveauAcces;
+import com.isis.archivage.enums.StatutDocument;
+import com.isis.archivage.repositories.DocumentRepository;
+import com.isis.archivage.repositories.HistoriqueActionRepository;
+import com.isis.archivage.repositories.UtilisateurRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -141,5 +144,13 @@ public class DocumentService {
         historiqueActionRepository.save(log);
 
         return resource;
+    }
+
+    public void changerStatutDocument(Long idDocument, StatutDocument nouveauStatut) {
+        Document doc = documentRepository.findById(idDocument)
+                .orElseThrow(() -> new RuntimeException("Document introuvable"));
+
+        doc.setStatut(nouveauStatut);
+        documentRepository.save(doc);
     }
 }
