@@ -57,6 +57,17 @@ public class DocumentService {
                 .orElse(false);
     }
 
+    private boolean estVisiblePourUtilisateur(Document doc, Utilisateur utilisateur) {
+        if (!possedeDroitSuffisant(utilisateur, doc.getCategorie(), NiveauAcces.VISUALISATION)) {
+            return false;
+        }
+
+        boolean estAdmin = utilisateur.getDroitsAcces().stream()
+                .anyMatch(droit -> droit.getNiveauAcces() == NiveauAcces.ADMINISTRATEUR);
+
+        return estAdmin || doc.getStatut() == StatutDocument.VALIDE;
+    }
+
     @Transactional
     public Document uploaderDocument(MultipartFile fichier, String titre, String description,
             CategorieArchive categorie, String emailUtilisateur) throws Exception {
@@ -97,21 +108,21 @@ public class DocumentService {
                 .orElseThrow(() -> new Exception("Utilisateur introuvable"));
 
         return documentRepository.findAll().stream()
-                .filter(doc -> possedeDroitSuffisant(utilisateur, doc.getCategorie(), NiveauAcces.VISUALISATION))
+                .filter(doc -> estVisiblePourUtilisateur(doc, utilisateur)) // Utilisation du nouveau filtre
                 .toList();
     }
 
     public List<Document> rechercherParTitre(String motCle, String emailUtilisateur) throws Exception {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(emailUtilisateur).orElseThrow();
         return documentRepository.findByTitreContainingIgnoreCase(motCle).stream()
-                .filter(doc -> possedeDroitSuffisant(utilisateur, doc.getCategorie(), NiveauAcces.VISUALISATION))
+                .filter(doc -> estVisiblePourUtilisateur(doc, utilisateur)) // Sécurisé par statut et droits
                 .toList();
     }
 
     public List<Document> rechercherParAuteur(String nom, String prenom, String emailUtilisateur) throws Exception {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(emailUtilisateur).orElseThrow();
         return documentRepository.findByAuteur_NomAndAuteur_Prenom(nom, prenom).stream()
-                .filter(doc -> possedeDroitSuffisant(utilisateur, doc.getCategorie(), NiveauAcces.VISUALISATION))
+                .filter(doc -> estVisiblePourUtilisateur(doc, utilisateur)) // Sécurisé par statut et droits
                 .toList();
     }
 
@@ -124,9 +135,8 @@ public class DocumentService {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(emailUtilisateur)
                 .orElseThrow(() -> new Exception("Utilisateur introuvable"));
 
-        if (!possedeDroitSuffisant(utilisateur, doc.getCategorie(), NiveauAcces.VISUALISATION)) {
-            throw new Exception(
-                    "Accès refusé : Droits de VISUALISATION requis pour la catégorie " + doc.getCategorie());
+        if (!estVisiblePourUtilisateur(doc, utilisateur)) {
+            throw new Exception("Accès refusé : Document non disponible ou droits insuffisants.");
         }
 
         Path cheminFichier = Paths.get(UPLOAD_DIRECTORY).resolve(doc.getNomFichier()).normalize();
@@ -149,7 +159,6 @@ public class DocumentService {
     public void changerStatutDocument(Long idDocument, StatutDocument nouveauStatut) {
         Document doc = documentRepository.findById(idDocument)
                 .orElseThrow(() -> new RuntimeException("Document introuvable"));
-
         doc.setStatut(nouveauStatut);
         documentRepository.save(doc);
     }

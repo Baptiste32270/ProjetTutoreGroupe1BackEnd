@@ -60,6 +60,7 @@ public class DocumentController {
         }
     }
 
+    // IL N'Y A PLUS QU'UNE SEULE METHODE GET ICI !
     @GetMapping
     public ResponseEntity<?> getAllDocuments(Principal principal) {
         try {
@@ -116,7 +117,6 @@ public class DocumentController {
             Document doc = documentRepository.findById(idDocument)
                     .orElseThrow(() -> new Exception("Document introuvable"));
 
-            // CORRECTION : Utilisation de la variable d'environnement pour l'URL
             String urlComplete = urlFrontendBase + "/documents/details/" + doc.getIdDocument();
             byte[] image = qrCodeService.genererQrCodeImage(urlComplete, 250, 250);
 
@@ -150,9 +150,9 @@ public class DocumentController {
             @RequestParam("statut") StatutDocument statut) {
         try {
             documentService.changerStatutDocument(id, statut);
-            return ResponseEntity.ok().body("{\"message\": \"Statut mis à jour avec succès\"}");
+            return ResponseEntity.ok().body("{\"message\": \"Statut mis à jour\"}");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("{\"erreur\": \"" + e.getMessage() + "\"}");
+            return ResponseEntity.badRequest().build();
         }
     }
 }
