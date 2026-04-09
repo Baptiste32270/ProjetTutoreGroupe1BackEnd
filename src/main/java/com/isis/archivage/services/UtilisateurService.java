@@ -1,5 +1,6 @@
 package com.isis.archivage.services;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -50,5 +51,25 @@ public class UtilisateurService {
     public Utilisateur trouverParEmail(String email) {
         return utilisateurRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'email : " + email));
+    }
+
+    public List<Utilisateur> obtenirTous() {
+        return utilisateurRepository.findAll();
+    }
+
+    public void modifierDroits(Long idUtilisateur, List<DroitAcces> nouveauxDroits) {
+        Utilisateur utilisateur = utilisateurRepository.findById(idUtilisateur)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID : " + idUtilisateur));
+
+        utilisateur.getDroitsAcces().clear();
+
+        if (nouveauxDroits != null) {
+            for (DroitAcces droit : nouveauxDroits) {
+                droit.setUtilisateur(utilisateur);
+                utilisateur.getDroitsAcces().add(droit);
+            }
+        }
+
+        utilisateurRepository.save(utilisateur);
     }
 }

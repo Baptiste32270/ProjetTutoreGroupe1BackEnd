@@ -3,12 +3,12 @@ package com.isis.archivage.controllers;
 import java.security.Principal;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,7 +29,6 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/documents")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "Bearer Authentication")
 public class DocumentController {
@@ -38,6 +37,9 @@ public class DocumentController {
     private final DocumentRepository documentRepository;
     private final QrCodeService qrCodeService;
     private final PdfService pdfService;
+
+    @Value("${frontend.url:https://ptut-isis-1.onrender.com}")
+    private String urlFrontendBase;
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploaderDocument(
@@ -112,8 +114,9 @@ public class DocumentController {
             Document doc = documentRepository.findById(idDocument)
                     .orElseThrow(() -> new Exception("Document introuvable"));
 
-            String urlFrontend = "http://localhost:5173/documents/details/" + doc.getIdDocument();
-            byte[] image = qrCodeService.genererQrCodeImage(urlFrontend, 250, 250);
+            // CORRECTION : Utilisation de la variable d'environnement pour l'URL
+            String urlComplete = urlFrontendBase + "/documents/details/" + doc.getIdDocument();
+            byte[] image = qrCodeService.genererQrCodeImage(urlComplete, 250, 250);
 
             return ResponseEntity.ok().body(image);
         } catch (Exception e) {
