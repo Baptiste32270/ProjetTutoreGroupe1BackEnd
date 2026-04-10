@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.isis.archivage.dto.CreationUtilisateurRequest;
 import com.isis.archivage.entities.DroitAcces;
@@ -71,5 +72,13 @@ public class UtilisateurService {
         }
 
         utilisateurRepository.save(utilisateur);
+    }
+
+    @Transactional
+    public void supprimerUtilisateurEtSesDonnees(Long idUtilisateur) throws Exception {
+        Utilisateur user = utilisateurRepository.findById(idUtilisateur)
+                .orElseThrow(() -> new Exception("Utilisateur introuvable"));
+
+        utilisateurRepository.delete(user);
     }
 }

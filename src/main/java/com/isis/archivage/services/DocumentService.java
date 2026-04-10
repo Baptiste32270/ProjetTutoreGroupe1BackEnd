@@ -1,5 +1,6 @@
 package com.isis.archivage.services;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -161,5 +162,30 @@ public class DocumentService {
                 .orElseThrow(() -> new RuntimeException("Document introuvable"));
         doc.setStatut(nouveauStatut);
         documentRepository.save(doc);
+    }
+
+    @Transactional
+    public Document modifierMetadonnees(Long id, String titre, String description) throws Exception {
+        Document doc = documentRepository.findById(id)
+                .orElseThrow(() -> new Exception("Document introuvable"));
+
+        doc.setTitre(titre);
+        doc.setDescription(description);
+
+        return documentRepository.save(doc);
+    }
+
+    @Transactional
+    public void supprimerDocumentDefinitivement(Long id) throws Exception {
+        Document doc = documentRepository.findById(id)
+                .orElseThrow(() -> new Exception("Document introuvable"));
+
+        try {
+            Path cheminFichier = Paths.get(UPLOAD_DIRECTORY).resolve(doc.getNomFichier()).normalize();
+            Files.deleteIfExists(cheminFichier);
+        } catch (IOException e) {
+            System.err.println("Erreur lors de la suppression du fichier : " + e.getMessage());
+        }
+        documentRepository.delete(doc);
     }
 }

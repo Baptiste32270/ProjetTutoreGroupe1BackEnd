@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -153,6 +154,29 @@ public class DocumentController {
             return ResponseEntity.ok().body("{\"message\": \"Statut mis à jour\"}");
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PutMapping("/{id}/modifier")
+    public ResponseEntity<?> modifierDocument(
+            @PathVariable("id") Long id,
+            @RequestParam("titre") String titre,
+            @RequestParam("description") String description) {
+        try {
+            Document doc = documentService.modifierMetadonnees(id, titre, description);
+            return ResponseEntity.ok(doc);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> supprimerDocument(@PathVariable("id") Long id) {
+        try {
+            documentService.supprimerDocumentDefinitivement(id);
+            return ResponseEntity.ok().body("{\"message\": \"Document et fichier supprimés avec succès\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
 }

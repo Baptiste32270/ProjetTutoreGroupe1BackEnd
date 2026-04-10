@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.isis.archivage.dto.CreationUtilisateurRequest;
 import com.isis.archivage.entities.DroitAcces;
 import com.isis.archivage.entities.Utilisateur;
+import com.isis.archivage.repositories.UtilisateurRepository;
 import com.isis.archivage.services.UtilisateurService;
 
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class UtilisateurController {
 
     private final UtilisateurService utilisateurService;
+    private final UtilisateurRepository utilisateurRepository;
 
     @PostMapping("/creer")
     public ResponseEntity<Utilisateur> creerUtilisateur(@RequestBody CreationUtilisateurRequest request) {
@@ -60,6 +63,16 @@ public class UtilisateurController {
             return ResponseEntity.ok().body("{\"message\": \"Droits mis à jour avec succès\"}");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"erreur\": \"" + e.getMessage() + "\"}");
+        }
+    }
+
+    @DeleteMapping("/api/admin/utilisateurs/{id}")
+    public ResponseEntity<?> supprimerUtilisateur(@PathVariable("id") Long id) {
+        try {
+            utilisateurRepository.deleteById(id);
+            return ResponseEntity.ok().body("{\"message\": \"Utilisateur supprimé (Droit à l'oubli appliqué)\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }
