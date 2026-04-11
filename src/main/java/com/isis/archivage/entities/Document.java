@@ -3,9 +3,7 @@ package com.isis.archivage.entities;
 import java.time.LocalDateTime;
 
 import com.isis.archivage.enums.CategorieArchive;
-import com.isis.archivage.enums.StatutDocument;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -36,8 +34,4 @@ public class Document {
     @ManyToOne
     @JoinColumn(name = "id_utilisateur_auteur")
     private Utilisateur auteur;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private StatutDocument statut = StatutDocument.EN_ATTENTE;
 }

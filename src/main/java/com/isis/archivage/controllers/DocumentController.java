@@ -9,11 +9,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.isis.archivage.entities.Document;
 import com.isis.archivage.enums.CategorieArchive;
-import com.isis.archivage.enums.StatutDocument;
 import com.isis.archivage.repositories.DocumentRepository;
 import com.isis.archivage.services.DocumentService;
 import com.isis.archivage.services.PdfService;
@@ -61,7 +58,6 @@ public class DocumentController {
         }
     }
 
-    // IL N'Y A PLUS QU'UNE SEULE METHODE GET ICI !
     @GetMapping
     public ResponseEntity<?> getAllDocuments(Principal principal) {
         try {
@@ -118,6 +114,7 @@ public class DocumentController {
             Document doc = documentRepository.findById(idDocument)
                     .orElseThrow(() -> new Exception("Document introuvable"));
 
+            // CORRECTION : Utilisation de la variable d'environnement pour l'URL
             String urlComplete = urlFrontendBase + "/documents/details/" + doc.getIdDocument();
             byte[] image = qrCodeService.genererQrCodeImage(urlComplete, 250, 250);
 
@@ -142,41 +139,6 @@ public class DocumentController {
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @PutMapping("/{id}/statut")
-    public ResponseEntity<?> modifierStatut(
-            @PathVariable("id") Long id,
-            @RequestParam("statut") StatutDocument statut) {
-        try {
-            documentService.changerStatutDocument(id, statut);
-            return ResponseEntity.ok().body("{\"message\": \"Statut mis à jour\"}");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @PutMapping("/{id}/modifier")
-    public ResponseEntity<?> modifierDocument(
-            @PathVariable("id") Long id,
-            @RequestParam("titre") String titre,
-            @RequestParam("description") String description) {
-        try {
-            Document doc = documentService.modifierMetadonnees(id, titre, description);
-            return ResponseEntity.ok(doc);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> supprimerDocument(@PathVariable("id") Long id) {
-        try {
-            documentService.supprimerDocumentDefinitivement(id);
-            return ResponseEntity.ok().body("{\"message\": \"Document et fichier supprimés avec succès\"}");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
 }

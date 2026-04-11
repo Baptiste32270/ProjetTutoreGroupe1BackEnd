@@ -1,29 +1,25 @@
 package com.isis.archivage.services;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.List;
-
+import com.isis.archivage.entities.Document;
+import com.isis.archivage.entities.HistoriqueAction;
+import com.isis.archivage.entities.Utilisateur;
+import com.isis.archivage.enums.CategorieArchive;
+import com.isis.archivage.enums.NiveauAcces;
+import com.isis.archivage.repositories.DocumentRepository;
+import com.isis.archivage.repositories.HistoriqueActionRepository;
+import com.isis.archivage.repositories.UtilisateurRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.isis.archivage.entities.Document;
-import com.isis.archivage.entities.HistoriqueAction;
-import com.isis.archivage.entities.Utilisateur;
-import com.isis.archivage.enums.CategorieArchive;
-import com.isis.archivage.enums.NiveauAcces;
-import com.isis.archivage.enums.StatutDocument;
-import com.isis.archivage.repositories.DocumentRepository;
-import com.isis.archivage.repositories.HistoriqueActionRepository;
-import com.isis.archivage.repositories.UtilisateurRepository;
-
-import lombok.RequiredArgsConstructor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -56,17 +52,6 @@ public class DocumentService {
                     return false;
                 })
                 .orElse(false);
-    }
-
-    private boolean estVisiblePourUtilisateur(Document doc, Utilisateur utilisateur) {
-        if (!possedeDroitSuffisant(utilisateur, doc.getCategorie(), NiveauAcces.VISUALISATION)) {
-            return false;
-        }
-
-        boolean estAdmin = utilisateur.getDroitsAcces().stream()
-                .anyMatch(droit -> droit.getNiveauAcces() == NiveauAcces.ADMINISTRATEUR);
-
-        return estAdmin || doc.getStatut() == StatutDocument.VALIDE;
     }
 
     @Transactional
@@ -109,21 +94,21 @@ public class DocumentService {
                 .orElseThrow(() -> new Exception("Utilisateur introuvable"));
 
         return documentRepository.findAll().stream()
-                .filter(doc -> estVisiblePourUtilisateur(doc, utilisateur)) // Utilisation du nouveau filtre
+                .filter(doc -> possedeDroitSuffisant(utilisateur, doc.getCategorie(), NiveauAcces.VISUALISATION))
                 .toList();
     }
 
     public List<Document> rechercherParTitre(String motCle, String emailUtilisateur) throws Exception {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(emailUtilisateur).orElseThrow();
         return documentRepository.findByTitreContainingIgnoreCase(motCle).stream()
-                .filter(doc -> estVisiblePourUtilisateur(doc, utilisateur)) // Sécurisé par statut et droits
+                .filter(doc -> possedeDroitSuffisant(utilisateur, doc.getCategorie(), NiveauAcces.VISUALISATION))
                 .toList();
     }
 
     public List<Document> rechercherParAuteur(String nom, String prenom, String emailUtilisateur) throws Exception {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(emailUtilisateur).orElseThrow();
         return documentRepository.findByAuteur_NomAndAuteur_Prenom(nom, prenom).stream()
-                .filter(doc -> estVisiblePourUtilisateur(doc, utilisateur)) // Sécurisé par statut et droits
+                .filter(doc -> possedeDroitSuffisant(utilisateur, doc.getCategorie(), NiveauAcces.VISUALISATION))
                 .toList();
     }
 
@@ -136,8 +121,9 @@ public class DocumentService {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(emailUtilisateur)
                 .orElseThrow(() -> new Exception("Utilisateur introuvable"));
 
-        if (!estVisiblePourUtilisateur(doc, utilisateur)) {
-            throw new Exception("Accès refusé : Document non disponible ou droits insuffisants.");
+        if (!possedeDroitSuffisant(utilisateur, doc.getCategorie(), NiveauAcces.VISUALISATION)) {
+            throw new Exception(
+                    "Accès refusé : Droits de VISUALISATION requis pour la catégorie " + doc.getCategorie());
         }
 
         Path cheminFichier = Paths.get(UPLOAD_DIRECTORY).resolve(doc.getNomFichier()).normalize();
@@ -155,37 +141,5 @@ public class DocumentService {
         historiqueActionRepository.save(log);
 
         return resource;
-    }
-
-    public void changerStatutDocument(Long idDocument, StatutDocument nouveauStatut) {
-        Document doc = documentRepository.findById(idDocument)
-                .orElseThrow(() -> new RuntimeException("Document introuvable"));
-        doc.setStatut(nouveauStatut);
-        documentRepository.save(doc);
-    }
-
-    @Transactional
-    public Document modifierMetadonnees(Long id, String titre, String description) throws Exception {
-        Document doc = documentRepository.findById(id)
-                .orElseThrow(() -> new Exception("Document introuvable"));
-
-        doc.setTitre(titre);
-        doc.setDescription(description);
-
-        return documentRepository.save(doc);
-    }
-
-    @Transactional
-    public void supprimerDocumentDefinitivement(Long id) throws Exception {
-        Document doc = documentRepository.findById(id)
-                .orElseThrow(() -> new Exception("Document introuvable"));
-
-        try {
-            Path cheminFichier = Paths.get(UPLOAD_DIRECTORY).resolve(doc.getNomFichier()).normalize();
-            Files.deleteIfExists(cheminFichier);
-        } catch (IOException e) {
-            System.err.println("Erreur lors de la suppression du fichier : " + e.getMessage());
-        }
-        documentRepository.delete(doc);
     }
 }
