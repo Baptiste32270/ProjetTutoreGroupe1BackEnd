@@ -24,7 +24,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtFilter jwtFilter;
+    private final JwtService jwtService;
+
+    public JwtFilter jwtFilter() {
+        return new JwtFilter(jwtService);
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -36,21 +40,21 @@ public class SecurityConfig {
         http
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
-
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/documents/*/qrcode",
                                 "/api/auth/login",
                                 "/api/utilisateurs/creer",
+                                "/v3/api-docs",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/",
-                                "/api/**")
+                                "/swagger-resources/**")
                         .permitAll()
+                        // On protège le reste de ton API !
+                        .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated())
-
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable));
 
         return http.build();
@@ -61,16 +65,20 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOriginPatterns(
-                List.of("http://localhost:5173", "http://localhost:8080", "https://ptut-isis-1.onrender.com"));
+                List.of(
+                        "http://localhost:5173",
+                        "http://localhost:8080",
+                        "https://ptut-isis-1.onrender.com",
+                        "https://projettutoregroupe1backend-production.up.railway.app"));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("*"));
 
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-        return source; // pour commit
+        return source;
     }
 }
